@@ -122,7 +122,7 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
         {
             var moveTo = AnsiConsole.Prompt(
                 new SelectionPrompt<Choice>()
-                    .Title($"Do you want to move missing resource [red]{resource.Address}[/]?")
+                    .Title($"Do you want to move missing resource [red]{resource.Address.EscapeMarkup()}[/]?")
                     .PageSize(10)
                     .MoreChoicesText("[grey](Move up and down to reveal more added resources)[/]")
                     .AddChoices(
@@ -135,7 +135,7 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
 
             if (!moveTo.SkipResource)
             {
-                AnsiConsole.MarkupLine($"Moving [red]{resource.Address}[/] to [green]{moveTo.Resource!.Address}[/]");
+                AnsiConsole.MarkupLine($"Moving [red]{resource.Address.EscapeMarkup()}[/] to [green]{moveTo.Resource!.Address.EscapeMarkup()}[/]");
                 moves.Add((resource.Address, moveTo.Resource!.Address));
             }
         }
@@ -163,7 +163,7 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
             {
                 foreach (var move in moves)
                 {
-                    AnsiConsole.MarkupLine($"Moving [red]{move.from}[/] to [green]{move.to}[/]");
+                    AnsiConsole.MarkupLine($"Moving [red]{move.from.EscapeMarkup()}[/] to [green]{move.to.EscapeMarkup()}[/]");
                     await SimpleExec.Command.RunAsync("terraform", $"-chdir={tfDir} state mv {move.from.Replace("\"", "\\\"")} {move.to.Replace("\"", "\\\"")}", noEcho: true, createNoWindow: true);
                 }
             }
