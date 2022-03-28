@@ -154,7 +154,7 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
 
         foreach (var move in moves)
         {
-            AnsiConsole.MarkupLine($"terraform state mv {move.from} {move.to}".Replace("\"", "\\\""));
+            AnsiConsole.MarkupLine($"terraform state mv {move.from} {move.to}".Replace("\"", "\\\"").EscapeMarkup());
         }
 
         if (execute)
