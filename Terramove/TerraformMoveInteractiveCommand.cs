@@ -192,7 +192,7 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
         {
             if (Resource is not null)
             {
-                return $"{Resource.Address}";// [grey]({Resource.After})[/]";
+                return $"{Resource.Address}".EscapeMarkup();// [grey]({Resource.After})[/]";
             }
             else
             {
