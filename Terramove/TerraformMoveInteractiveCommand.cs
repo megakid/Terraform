@@ -118,25 +118,31 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
 
         var moves = new List<(string from, string to)>();
 
+        var anyMovable = false;
         foreach (var resource in deletedResources.Values)
         {
-            var moveTo = AnsiConsole.Prompt(
-                new SelectionPrompt<Choice>()
-                    .Title($"Do you want to move missing resource [red]{resource.Address.EscapeMarkup()}[/]?")
-                    .PageSize(10)
-                    .MoreChoicesText("[grey](Move up and down to reveal more added resources)[/]")
-                    .AddChoices(
-                        addedResources.Values
-                        .Where(e => !moves.Any(m => m.to == e.Address) && e.ProviderName == resource.ProviderName && e.Type == resource.Type)
-                        .OrderBy(add => SimilarityScore(resource, add))
-                        .Select(add => new Choice(add))
-                        .Concat(new[] { new Choice() })
-                    ));
-
-            if (!moveTo.SkipResource)
+            var choices = addedResources.Values
+                .Where(e => !moves.Any(m => m.to == e.Address) && e.ProviderName == resource.ProviderName && e.Type == resource.Type)
+                .OrderBy(add => SimilarityScore(resource, add))
+                .Select(add => new Choice(add))
+                .ToArray();
+                        
+            if (choices.Length > 0) 
             {
-                AnsiConsole.MarkupLine($"Moving [red]{resource.Address.EscapeMarkup()}[/] to [green]{moveTo.Resource!.Address.EscapeMarkup()}[/]");
-                moves.Add((resource.Address, moveTo.Resource!.Address));
+                anyMovable = true;
+                var moveTo = AnsiConsole.Prompt(
+                    new SelectionPrompt<Choice>()
+                        .Title($"Do you want to move missing resource [red]{resource.Address.EscapeMarkup()}[/]?")
+                        .PageSize(10)
+                        .MoreChoicesText("[grey](Move up and down to reveal more added resources)[/]")
+                        .AddChoices(choices.Concat(new[] { new Choice() }))
+                    );
+
+                if (!moveTo.SkipResource)
+                {
+                    AnsiConsole.MarkupLine($"Moving [red]{resource.Address.EscapeMarkup()}[/] to [green]{moveTo.Resource!.Address.EscapeMarkup()}[/]");
+                    moves.Add((resource.Address, moveTo.Resource!.Address));
+                }
             }
         }
 
@@ -148,7 +154,14 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
 
         if (moves.Count == 0)
         {
-            AnsiConsole.MarkupLine("[gold3_1]No resources to move.[/]");
+            if (anyMovable)
+            {
+                AnsiConsole.MarkupLine("[gold3_1]No resources moved.  All skipped...[/]");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[gold3_1]No resources found that can be moved.[/]");
+            }
             return 0;
         }
 
