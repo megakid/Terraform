@@ -94,7 +94,11 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
         {
             if (je.TryGetProperty("action_reason", out var actionReason))
             {
-                if (actionReason.GetString() == "delete_because_no_resource_config")
+                var reason = actionReason.GetString();
+                if (reason == "delete_because_no_resource_config" ||
+                    reason == "delete_because_wrong_repetition" || 
+                    reason == "delete_because_count_index" ||
+                    reason == "delete_because_each_key")
                 {
                     var address = je.GetProperty("address").GetString()!;
                     deletedResources.Add(address,
