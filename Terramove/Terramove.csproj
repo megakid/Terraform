@@ -2,14 +2,15 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFrameworks>net5.0;net6.0</TargetFrameworks>
+		<TargetFrameworks>net6.0</TargetFrameworks>
 		<Nullable>enable</Nullable>
 
 		<PackAsTool>true</PackAsTool>
 		<ToolCommandName>terramove</ToolCommandName>
 		<PackageOutputPath>./nupkg</PackageOutputPath>
 
-		<Description>Interactive tool to aid in terraform resource moves.</Description>
+		<Description>Interactive tool to aid in 
+		resource moves.</Description>
 		<PackageProjectUrl>https://github.com/megakid/Terramove</PackageProjectUrl>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 		<PackageReadmeFile>README.md</PackageReadmeFile>

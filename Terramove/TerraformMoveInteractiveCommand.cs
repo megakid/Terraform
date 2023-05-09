@@ -26,6 +26,12 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
         public bool Execute { get; init; }
 
 
+        [CommandOption("-b|--binary")]
+        [Description("Instead of using terraform, use another binary such as terragrunt.  Defaults to 'terraform'.")]
+        [DefaultValue("terraform")]
+        public string Binary { get; init; }
+
+
         public override ValidationResult Validate()
         {
             if (TfPlanPath is not null && TfDir is not null)
@@ -48,35 +54,35 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
 
         if (settings.TfPlanPath is not null)
         {
-            return await ExecuteWithPlan(settings.TfPlanPath, settings.Execute, Path.GetDirectoryName(settings.TfPlanPath!)!);
+            return await ExecuteWithPlan(settings.Binary, settings.TfPlanPath, settings.Execute, Path.GetDirectoryName(settings.TfPlanPath!)!);
         }
         else
         {
-            return await ExecuteWithDir(settings.TfDir!, settings.Execute);
+            return await ExecuteWithDir(settings.Binary, settings.TfDir!, settings.Execute);
         }
     }
 
-    private async Task<int> ExecuteWithPlan(string tfPlanPath, bool execute, string tfDir)
+    private async Task<int> ExecuteWithPlan(string binary, string tfPlanPath, bool execute, string tfDir)
     {
         var json = await File.ReadAllTextAsync(tfPlanPath);
 
-        return await ExecuteWithJson(json, execute, tfDir);
+        return await ExecuteWithJson(binary, json, execute, tfDir);
     }
 
-    private async Task<int> ExecuteWithDir(string tfDir, bool execute)
+    private async Task<int> ExecuteWithDir(string binary, string tfDir, bool execute)
     {
         // create temporary file
         var randomFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         var tfPlanPath = randomFile + ".tfplan";
         var tfPlanJsonPath = randomFile + ".tfplan.json";
         // create tf plan json
-        await SimpleExec.Command.RunAsync("terraform", $"-chdir={tfDir} plan -input=false -out {tfPlanPath}", noEcho: true, createNoWindow: true);
-        var (stdOut, stdErr) = await SimpleExec.Command.ReadAsync("terraform", $"-chdir={tfDir} show -json -no-color {tfPlanPath}");
+        await SimpleExec.Command.RunAsync(binary, $"plan -input=false -out {tfPlanPath}", workingDirectory: tfDir, noEcho: true, createNoWindow: true);
+        var (stdOut, stdErr) = await SimpleExec.Command.ReadAsync(binary, $"show -json -no-color {tfPlanPath}", workingDirectory: tfDir);
 
-        return await ExecuteWithJson(stdOut, execute, tfDir);
+        return await ExecuteWithJson(binary, stdOut, execute, tfDir);
     }
     
-    private async Task<int> ExecuteWithJson(string json, bool execute, string? tfDir = null)
+    private async Task<int> ExecuteWithJson(string binary, string json, bool execute, string? tfDir = null)
     {
 
         var jd = JsonDocument.Parse(json);
@@ -167,7 +173,7 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
 
         foreach (var move in moves)
         {
-            AnsiConsole.MarkupLine($"terraform state mv {move.from} {move.to}".Replace("\"", "\\\"").EscapeMarkup());
+            AnsiConsole.MarkupLine($"{binary} state mv {move.from} {move.to}".Replace("\"", "\\\"").EscapeMarkup());
         }
 
         if (execute)
@@ -177,7 +183,7 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
                 foreach (var move in moves)
                 {
                     AnsiConsole.MarkupLine($"Moving [red]{move.from.EscapeMarkup()}[/] to [green]{move.to.EscapeMarkup()}[/]");
-                    await SimpleExec.Command.RunAsync("terraform", $"-chdir={tfDir} state mv {move.from.Replace("\"", "\\\"")} {move.to.Replace("\"", "\\\"")}", noEcho: true, createNoWindow: true);
+                    await SimpleExec.Command.RunAsync(binary, $"state mv {move.from.Replace("\"", "\\\"")} {move.to.Replace("\"", "\\\"")}", workingDirectory: tfDir!, noEcho: true, createNoWindow: true);
                 }
             }
         }
