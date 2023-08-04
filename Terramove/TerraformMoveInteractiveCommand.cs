@@ -18,6 +18,7 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
 
         [Description("Path to your Terraform project.  This mode will generate the plan for you.")]
         [CommandOption("--tfdir")]
+        [DefaultValue(".")]
         public string? TfDir { get; init; }
 
         [CommandOption("-e|--execute")]
@@ -34,10 +35,8 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
 
         public override ValidationResult Validate()
         {
-            if (TfPlanPath is not null && TfDir is not null)
+            if (TfPlanPath is not null && TfDir != ".")
                 return ValidationResult.Error("You must choose --tfplan or --tfdir, not both.");
-            if (TfPlanPath is null && TfDir is null)
-                return ValidationResult.Error("You must choose either --tfplan or --tfdir.");
             
             if (TfPlanPath is not null && !File.Exists(TfPlanPath))
                 return ValidationResult.Error($"File not found: {TfPlanPath}");
@@ -76,8 +75,13 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
         var tfPlanPath = randomFile + ".tfplan";
         var tfPlanJsonPath = randomFile + ".tfplan.json";
         // create tf plan json
-        await SimpleExec.Command.RunAsync(binary, $"plan -input=false -out {tfPlanPath}", workingDirectory: tfDir, noEcho: true, createNoWindow: true);
-        var (stdOut, stdErr) = await SimpleExec.Command.ReadAsync(binary, $"show -json -no-color {tfPlanPath}", workingDirectory: tfDir);
+        string stdOut = "";
+		await AnsiConsole.Status()
+	        .StartAsync("[green]Running plan...[/]", async ctx =>
+	        {
+				await SimpleExec.Command.RunAsync(binary, $"plan -input=false -out {tfPlanPath}", workingDirectory: tfDir, noEcho: true, createNoWindow: true);
+				(stdOut, _) = await SimpleExec.Command.ReadAsync(binary, $"show -json -no-color {tfPlanPath}", workingDirectory: tfDir);
+			});
 
         return await ExecuteWithJson(binary, stdOut, execute, tfDir);
     }
@@ -174,7 +178,7 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
 
         foreach (var move in moves)
         {
-            AnsiConsole.MarkupLine($"{binary} state mv {move.from} {move.to}".Replace("\"", "\\\"").EscapeMarkup());
+            AnsiConsole.MarkupLine($"{binary} state mv {move.from} {move.to}".Escape().EscapeMarkup());
         }
 
         if (execute)
@@ -183,8 +187,12 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
             {
                 foreach (var move in moves)
                 {
-                    AnsiConsole.MarkupLine($"Moving [red]{move.from.EscapeMarkup()}[/] to [green]{move.to.EscapeMarkup()}[/]");
-                    await SimpleExec.Command.RunAsync(binary, $"state mv {move.from.Replace("\"", "\\\"")} {move.to.Replace("\"", "\\\"")}", workingDirectory: tfDir!, noEcho: true, createNoWindow: true);
+					//AnsiConsole.MarkupLine($"Moving [red]{move.from.EscapeMarkup()}[/] to [green]{move.to.EscapeMarkup()}[/]");
+					await AnsiConsole.Status()
+	                    .StartAsync($"Moving [red]{move.from.EscapeMarkup()}[/] to [green]{move.to.EscapeMarkup()}[/]...", async ctx =>
+	                    {
+							await SimpleExec.Command.RunAsync(binary, $"state mv {move.from.Escape()} {move.to.Escape()}", workingDirectory: tfDir!, noEcho: true, createNoWindow: true);
+	                    });
                 }
             }
         }
@@ -192,7 +200,9 @@ internal sealed class TerraformMoveInteractiveCommand : AsyncCommand<TerraformMo
         return 0;
     }
 
-    class Choice
+    
+
+	class Choice
     {
         public Choice()
         {

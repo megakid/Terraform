@@ -20,12 +20,12 @@
 
 	<ItemGroup>
 		<PackageReference Include="Quickenshtein" Version="1.5.1" />
-		<PackageReference Include="SimpleExec" Version="10.0.0" />
-		<PackageReference Include="Spectre.Console" Version="0.43.0" />
-		<PackageReference Include="System.Text.Json" Version="6.0.2" />
+		<PackageReference Include="SimpleExec" Version="11.0.0" />
+		<PackageReference Include="Spectre.Console.Cli" Version="0.47.0" />
+		<PackageReference Include="System.Text.Json" Version="7.0.3" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="..\README.md" Pack="true" PackagePath="\"/>
+		<None Include="..\README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 </Project>

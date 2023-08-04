@@ -1,4 +1,21 @@
-﻿using Spectre.Console.Cli;
+﻿using Spectre.Console;
+using Spectre.Console.Cli;
+using System;
 
 var app = new CommandApp<TerraformMoveInteractiveCommand>();
-return app.Run(args);
+app.Configure(configure =>
+{
+	configure.PropagateExceptions();
+	configure.AddCommand<TerraformMoveInteractiveCommand>("move");
+	configure.AddCommand<TerraformPlanTargetInteractiveCommand>("target");
+});
+
+try
+{
+	return app.Run(args);
+}
+catch (Exception ex)
+{
+	AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
+	return -99;
+}
