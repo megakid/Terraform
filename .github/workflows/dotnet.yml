@@ -25,15 +25,15 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: 8.0.x
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore -p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }}
+      run: dotnet build --no-restore --configuration Release -p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }}
     - name: Test
-      run: dotnet test --no-build --verbosity:normal
+      run: dotnet test --no-build --configuration Release --verbosity:normal
     - name: Pack
-      run: dotnet pack --no-build --verbosity:normal -p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }} Terramove/Terramove.csproj
+      run: dotnet pack --no-build --configuration Release --verbosity:normal -p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }} Terramove/Terramove.csproj
     - name: Push
       run: dotnet nuget push ./Terramove/nupkg/*.nupkg -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json
 
